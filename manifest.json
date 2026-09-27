@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Live Dub \u00b7 Korean & Japanese to English",
+  "version": "0.2.0",
+  "description": "Translate Korean or Japanese tab audio into English speech, with independent volume controls and voice choices.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "tabCapture",
+    "offscreen",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.openai.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Live Dub"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.openai.com"
+  }
+}

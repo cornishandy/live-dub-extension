@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Live Dub</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <header><span class="logo" aria-hidden="true">訳<span>EN</span></span><div><h1>Live Dub</h1><p>Keep watching. Hear it in English.</p></div><span class="tag">BETA</span></header>
+  <main>
+    <div class="route"><span><span id="sourceNative">한국어</span><small id="sourceName">Korean</small></span><span class="arrow">→</span><span>English <small>AI voice</small></span></div>
+    <section class="status"><div><span id="dot"></span><strong id="phase">Ready</strong><span id="elapsed"></span></div><p id="status" role="status">Open a video, then start translating.</p><p id="source" class="source"></p></section>
+    <section class="card"><h2>Your sound mix</h2>
+      <label for="original">Original audio <output id="originalValue">20%</output></label><input id="original" type="range" min="0" max="100" value="20">
+      <label for="translated">English translation <output id="translatedValue">100%</output></label><input id="translated" type="range" min="0" max="100" value="100">
+      <p class="hint">Keep the video player unmuted. Mix its sound here.</p>
+    </section>
+    <section class="card"><label for="sourceLanguage">Source language</label><select id="sourceLanguage"><option value="ko">Korean · 한국어</option><option value="ja">Japanese · 日本語</option></select><label class="modeLabel" for="mode">Translation style</label><select id="mode"><option value="continuous">Continuous · prioritize speed</option><option value="voice">Choose a voice · phrase by phrase</option></select>
+      <div id="voiceRow" hidden><label for="voice">English voice</label><select id="voice"><option value="marin">Marin</option><option value="cedar">Cedar</option><option value="coral">Coral</option><option value="ash">Ash</option></select></div>
+      <p class="hint" id="modeHint">Streams translations as speech arrives. Uses the service’s automatic voice.</p>
+    </section>
+    <details id="setup"><summary>API connection <span id="keyStatus">Key needed</span></summary><label for="key">Your OpenAI API key</label><input id="key" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false"><div class="keyActions"><button id="saveKey" class="secondary">Use key</button><button id="forgetKey" class="textButton">Forget key</button></div><p class="hint">Kept only for this browser session, inside the extension. Sent only to OpenAI. API billing is separate from ChatGPT.</p></details>
+    <p class="privacy">Start sends this tab’s audio to OpenAI for translation. Voices are AI-generated. No microphone or local recordings.</p>
+    <div class="actions"><button id="start">Start translating <span>→</span></button><button id="stop" class="secondary" disabled>Stop</button></div>
+    <p id="error" role="alert"></p>
+    <details class="captions"><summary>English transcript <span>Live</span></summary><p id="transcript">Translated words will appear here.</p></details>
+    <footer><a href="https://www.youtube.com/watch?v=EpPbLqadKTU" target="_blank" rel="noreferrer">Open example video ↗</a><span>Stop before seeking</span></footer>
+  </main><script type="module" src="popup.js"></script>
+</body></html>
