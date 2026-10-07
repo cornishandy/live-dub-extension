@@ -32,7 +32,7 @@ async function start(tabId) {
   const ticket = ++generation;
   let stored, tab, options;
   try {
-    stored = await chrome.storage.session.get(['state', 'apiKey']);
+    stored = { ...(await chrome.storage.session.get('state')), ...(await chrome.storage.local.get('apiKey')) };
     if (['live', 'connecting'].includes(stored.state?.phase)) throw new Error('Stop the current session first.');
     if (!stored.apiKey) throw new Error('Enter your OpenAI API key first.');
     tab = await chrome.tabs.get(tabId);
@@ -74,7 +74,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (sender.id !== chrome.runtime.id || message.target !== 'worker') return;
   const run = async () => {
     if (message.type === 'state') {
-      const result = await chrome.storage.session.get(['state', 'apiKey']);
+      const result = { ...(await chrome.storage.session.get('state')), ...(await chrome.storage.local.get('apiKey')) };
       if (!starting && ['live', 'connecting'].includes(result.state?.phase) && !(await exists())) {
         result.state = { ...idle, message: 'Audio session ended. Start again to reconnect.' };
         await publish(result.state);
@@ -82,8 +82,9 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       return { state: result.state || idle, hasKey: Boolean(result.apiKey), settings: settings((await chrome.storage.local.get('settings')).settings) };
     }
     if (message.type === 'key') {
-      if (message.key) await chrome.storage.session.set({ apiKey: message.key.trim() });
-      else await chrome.storage.session.remove('apiKey');
+      if (message.key) await chrome.storage.local.set({ apiKey: message.key.trim() });
+      else await chrome.storage.local.remove('apiKey');
+      await chrome.storage.session.remove('apiKey');
     } else if (message.type === 'settings') {
       const options = settings(message.settings);
       await chrome.storage.local.set({ settings: options });

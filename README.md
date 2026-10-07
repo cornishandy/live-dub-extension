@@ -34,7 +34,7 @@ If Continuous returns an access error, try Choose a voice. If both fail, check t
 
 ## Privacy and API key handling
 
-This is a **personal bring-your-own-key extension**, not a public website or shared-key deployment. Your key lives in `chrome.storage.session` (browser-session memory, not sync or disk settings), accessible only to trusted extension contexts. It is sent directly to OpenAI by the extension service worker to mint a short-lived session token. The audio document receives only that token. The key is never injected into websites or included in the package. **Forget key** stops translation and removes it. Browser restart/reloading the extension clears session storage.
+This is a **personal bring-your-own-key extension**, not a public website or shared-key deployment. Your key is saved in `chrome.storage.local` on this computer (not Chrome Sync), so you only need to enter it once. Only trusted extension contexts can read it, but local extension storage is not encrypted. It is sent directly to OpenAI by the extension service worker to mint a short-lived session token. The audio document receives only that token. The key is never injected into websites or included in the package. **Forget key** stops translation and removes it; uninstalling the extension also deletes it.
 
 Only audio from the explicitly selected tab goes to OpenAI after Start. All audible material in that tab, including ads, can be transmitted. No microphone capture. No audio recordings or transcript files are written locally. A rolling 1,600-character transcript is held in memory and cleared on Stop. Volume/mode preferences persist locally. OpenAI's API data handling applies to transmitted audio.
 

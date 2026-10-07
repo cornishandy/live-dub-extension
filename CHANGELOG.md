@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Remember the OpenAI API key across browser restarts (stored in local extension storage). Forget key still removes it.
+
 ## 0.2.0
 
 - Add Japanese → English alongside Korean → English.

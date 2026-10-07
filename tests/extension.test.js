@@ -39,10 +39,19 @@ test('successful start passes only short-lived token to audio, stop releases cap
   assert.equal(w.open(), true);
   assert.equal(w.messages[0].secret, 'ephemeral-test-token');
   assert.equal(JSON.stringify(w.messages).includes('private-test-key'), false);
-  assert.equal(w.local.apiKey, undefined);
   await w.send({ type: 'stop' });
   assert.equal(w.open(), false);
   assert.equal(w.memory.state.phase, 'idle');
+});
+test('API key persists in local storage and Forget key removes it', async () => {
+  const w = await worker();
+  await w.send({ type: 'key', key: '  saved-test-key  ' });
+  assert.equal(w.local.apiKey, 'saved-test-key');
+  assert.equal(w.memory.apiKey, undefined);
+  assert.equal((await w.send({ type: 'state' })).hasKey, true);
+  await w.send({ type: 'key', key: '' });
+  assert.equal(w.local.apiKey, undefined);
+  assert.equal((await w.send({ type: 'state' })).hasKey, false);
 });
 test('401 never captures audio and shows actionable failure', async () => {
   const w = await worker(async () => ({ ok: false, status: 401 }));

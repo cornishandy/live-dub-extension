@@ -14,7 +14,7 @@
       <div id="voiceRow" hidden><label for="voice">English voice</label><select id="voice"><option value="marin">Marin</option><option value="cedar">Cedar</option><option value="coral">Coral</option><option value="ash">Ash</option></select></div>
       <p class="hint" id="modeHint">Streams translations as speech arrives. Uses the service’s automatic voice.</p>
     </section>
-    <details id="setup"><summary>API connection <span id="keyStatus">Key needed</span></summary><label for="key">Your OpenAI API key</label><input id="key" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false"><div class="keyActions"><button id="saveKey" class="secondary">Use key</button><button id="forgetKey" class="textButton">Forget key</button></div><p class="hint">Kept only for this browser session, inside the extension. Sent only to OpenAI. API billing is separate from ChatGPT.</p></details>
+    <details id="setup"><summary>API connection <span id="keyStatus">Key needed</span></summary><label for="key">Your OpenAI API key</label><input id="key" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false"><div class="keyActions"><button id="saveKey" class="secondary">Use key</button><button id="forgetKey" class="textButton">Forget key</button></div><p class="hint">Saved on this computer inside the extension until you click Forget key. Sent only to OpenAI. API billing is separate from ChatGPT.</p></details>
     <p class="privacy">Start sends this tab’s audio to OpenAI for translation. Voices are AI-generated. No microphone or local recordings.</p>
     <div class="actions"><button id="start">Start translating <span>→</span></button><button id="stop" class="secondary" disabled>Stop</button></div>
     <p id="error" role="alert"></p>
