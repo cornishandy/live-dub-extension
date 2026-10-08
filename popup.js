@@ -13,7 +13,7 @@ function renderMode() {
   $('sourceNative').textContent = languages[current.sourceLanguage].native;
   $('sourceName').textContent = languages[current.sourceLanguage].name;
   $('voiceRow').hidden = current.mode !== 'voice';
-  $('modeHint').textContent = current.mode === 'voice' ? 'Natural AI voices. Waits for short pauses; may lag during continuous dialogue. Stop to change voices.' : 'Streams translations as speech arrives. Uses the service’s automatic voice.';
+  $('modeHint').textContent = current.mode === 'voice' ? 'Natural AI voices. Waits for short pauses; may lag during continuous dialogue. Stop to change voices.' : 'Streams translations as speech arrives. Voice follows each speaker’s tone and pitch.';
 }
 function render(state) {
   const running = ['live', 'connecting'].includes(state.phase);

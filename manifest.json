@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Live Dub \u00b7 Korean & Japanese to English",
+  "name": "Live Dub \u00b7 Korean, Japanese & more to English",
   "version": "0.2.0",
-  "description": "Translate Korean or Japanese tab audio into English speech, with independent volume controls and voice choices.",
+  "description": "Translate Korean, Japanese, or auto-detected tab audio into English speech, with independent volume controls and voice choices.",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",

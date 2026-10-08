@@ -142,8 +142,16 @@ test('Japanese selection survives normalization and sets the interpreter languag
   assert.equal(settings({ sourceLanguage: 'unknown' }).sourceLanguage, 'ko');
   assert.equal(settings({ sourceLanguage: 'toString' }).sourceLanguage, 'ko');
 });
+test('Auto-detect is selectable but Korean stays the default', () => {
+  assert.equal(settings().sourceLanguage, 'ko');
+  const options = settings({ sourceLanguage: 'auto', mode: 'voice' });
+  assert.equal(options.sourceLanguage, 'auto');
+  const { instructions } = sessionRequest(options).session;
+  assert.match(instructions, /Identify the language of the incoming speech/);
+  assert.doesNotMatch(instructions, /Korean|Japanese|Any language/);
+});
 test('continuous translation auto-detects source and always requests English output', () => {
-  for (const sourceLanguage of ['ko', 'ja']) {
+  for (const sourceLanguage of ['ko', 'ja', 'auto']) {
     const spec = sessionRequest(settings({ sourceLanguage }));
     assert.equal(spec.path, '/realtime/translations');
     assert.deepEqual(spec.session.audio, { output: { language: 'en' } });

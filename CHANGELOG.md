@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Remember the OpenAI API key across browser restarts (stored in local extension storage). Forget key still removes it.
+- Add an Auto-detect source language for any spoken language; Korean remains the default.
+- Label selectable voices as female or male, and explain that Continuous mode follows each speaker's voice.
 
 ## 0.2.0
 
