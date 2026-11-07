@@ -1,6 +1,7 @@
 import { settings, languages } from './config.js';
 const $ = id => document.getElementById(id);
 let current = settings();
+let settingsVersion = 0;
 let busy = false;
 let hasKey = false;
 async function send(type, extra = {}) {
@@ -41,16 +42,20 @@ async function init() {
     for (const id of ['key', 'saveKey', 'forgetKey']) $(id).disabled = true;
     return;
   }
+  const version = settingsVersion;
   const result = await send('state');
-  current = result.settings;
+  if (version === settingsVersion) {
+    current = result.settings;
+    for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) $(name).value = current[name];
+    for (const name of ['original', 'translated']) $(name + 'Value').textContent = current[name] + '%';
+  }
   hasKey = result.hasKey;
-  for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) $(name).value = current[name];
-  for (const name of ['original', 'translated']) $(name + 'Value').textContent = current[name] + '%';
   $('setup').open = !hasKey;
   renderMode(); render(result.state);
 }
 for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) {
   $(name).addEventListener(name === 'original' || name === 'translated' ? 'input' : 'change', async () => {
+    settingsVersion++;
     current = settings({ ...current, [name]: $(name).value });
     if (name === 'original' || name === 'translated') $(name + 'Value').textContent = current[name] + '%';
     renderMode();

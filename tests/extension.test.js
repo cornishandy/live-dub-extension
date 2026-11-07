@@ -43,6 +43,33 @@ test('successful start passes only short-lived token to audio, stop releases cap
   assert.equal(w.open(), false);
   assert.equal(w.memory.state.phase, 'idle');
 });
+test('handoff refreshes only volumes after token and stream waits', async () => {
+  for (const stage of ['token', 'stream']) {
+    let release, requested;
+    const gate = new Promise(resolve => { release = resolve; });
+    const w = await worker(async (url, init) => {
+      requested = { url, session: JSON.parse(init.body).session };
+      if (stage === 'token') await gate;
+      return { ok: true, json: async () => ({ value: 'synthetic-token' }) };
+    });
+    if (stage === 'stream') w.chrome.tabCapture.getMediaStreamId = async () => { await gate; return 'test-stream'; };
+    await w.send({ type: 'key', key: 'synthetic' });
+    const snapshot = settings({ mode: 'voice', sourceLanguage: 'ja', voice: 'ash' });
+    await w.send({ type: 'settings', settings: snapshot });
+    const pending = w.send({ type: 'start', tabId: 1 });
+    await tick();
+    assert.equal(w.memory.state.phase, 'connecting');
+    await w.send({ type: 'settings', settings: settings({ original: 0, translated: 0 }) });
+    release();
+    await pending;
+    const start = w.messages.find(m => m.type === 'start');
+    assert.deepEqual({ ...start.options }, { ...snapshot, original: 0, translated: 0 });
+    assert.equal(start.path, sessionRequest(snapshot).path);
+    assert.deepEqual(requested.session, sessionRequest(snapshot).session);
+    assert.equal(requested.url, `https://api.openai.com/v1${start.path}/client_secrets`);
+    await w.send({ type: 'stop' });
+  }
+});
 test('API key persists in local storage and Forget key removes it', async () => {
   const w = await worker();
   await w.send({ type: 'key', key: '  saved-test-key  ' });
@@ -89,9 +116,11 @@ test('capture failure closes offscreen and restores idle audio lifecycle', async
   assert.equal(w.open(), false);
   assert.match(w.memory.state.message, /Capture denied/);
 });
-test('offscreen mixer leaves outgoing source track untouched and closes it on failure', async () => {
+for (const pendingCapture of [false, true]) test(`offscreen mixer preserves latest volumes with pending capture=${pendingCapture} and closes on failure`, async () => {
   let listener, pc, stopped = false, closed = false, gainValue;
   const notices = [];
+  let releaseCapture;
+  const captureGate = new Promise(resolve => { releaseCapture = resolve; });
   const track = { stop: () => { stopped = true; }, addEventListener: () => {} };
   const stream = { getAudioTracks: () => [track], getTracks: () => [track] };
   const output = { play: async () => {}, pause: () => {} };
@@ -114,13 +143,21 @@ test('offscreen mixer leaves outgoing source track untouched and closes it on fa
   }
   const chrome = { runtime: { id: 'test', onMessage: { addListener: fn => { listener = fn; } }, sendMessage: async m => notices.push(m) } };
   vm.runInNewContext((await readFile(new URL('../offscreen.js', import.meta.url), 'utf8')).replace(/^import .*\n/, ''), {
-    chrome, apiError, languages, document: { querySelector: () => output }, navigator: { mediaDevices: { getUserMedia: async constraints => { assert.equal(constraints.audio.mandatory.chromeMediaSource, 'tab'); return stream; } } },
+    chrome, apiError, languages, document: { querySelector: () => output }, navigator: { mediaDevices: { getUserMedia: async constraints => { assert.equal(constraints.audio.mandatory.chromeMediaSource, 'tab'); if (pendingCapture) await captureGate; return stream; } } },
     AudioContext, RTCPeerConnection, AbortController, setTimeout, clearTimeout,
     fetch: async () => ({ ok: true, text: async () => 'answer' }),
   });
   listener({ target: 'audio', type: 'start', path: '/realtime/translations', streamId: 'test', secret: 'ephemeral', options: settings(), tabId: 1 }, { id: 'test' }, () => {});
+  if (pendingCapture) {
+    listener({ target: 'audio', type: 'mix', options: settings({ original: 0, translated: 0, mode: 'voice', sourceLanguage: 'ja', voice: 'ash' }) }, { id: 'test' }, () => {});
+    assert.equal(output.volume, 0);
+    releaseCapture();
+  }
   await tick();
   assert.equal(notices.at(-1).state.phase, 'live');
+  assert.equal(gainValue, pendingCapture ? 0 : 0.2);
+  assert.equal(output.volume, pendingCapture ? 0 : 1);
+  assert.deepEqual({ ...notices.at(-1).state.options }, settings(pendingCapture ? { original: 0, translated: 0 } : {}));
   listener({ target: 'audio', type: 'mix', options: settings({ original: 0, translated: 45 }) }, { id: 'test' }, () => {});
   assert.equal(gainValue, 0);
   assert.equal(output.volume, 0.45);

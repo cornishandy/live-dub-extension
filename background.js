@@ -60,7 +60,10 @@ async function start(tabId) {
     await ensureOffscreen();
     if (ticket !== generation) return;
     const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
+    const volumes = settings((await chrome.storage.local.get('settings')).settings);
     if (ticket !== generation) return;
+    // Keep the session configuration matched to its token; only the mix is live.
+    options = { ...options, original: volumes.original, translated: volumes.translated };
     const result = await chrome.runtime.sendMessage({ target: 'audio', type: 'start', streamId, secret, path: spec.path, options, tabId, title: tab.title });
     if (!result?.ok) throw new Error(result?.error || 'Could not start audio capture.');
   } catch (error) {

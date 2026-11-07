@@ -6,7 +6,7 @@ import { settings, languages, apiError } from '../config.js';
 const html = await readFile(new URL('../popup.html', import.meta.url), 'utf8');
 const source = (await readFile(new URL('../popup.js', import.meta.url), 'utf8')).replace(/^import .*\n/, '');
 const tick = () => new Promise(resolve => setImmediate(resolve));
-async function popup({ hasKey = false, phase = 'idle', message = 'Ready when you are.' } = {}) {
+async function popup({ hasKey = false, phase = 'idle', message = 'Ready when you are.', stateReply = data => data } = {}) {
   const elements = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(([, id]) => [id, {
     value: '', textContent: '', disabled: false, listeners: {}, addEventListener(type, fn) { this.listeners[type] = fn; },
   }]));
@@ -18,7 +18,7 @@ async function popup({ hasKey = false, phase = 'idle', message = 'Ready when you
     runtime: { id: 'test', sendMessage: async m => {
       calls.push(m);
       if (failures[m.type]) return { error: failures[m.type] };
-      if (m.type === 'state') return data;
+      if (m.type === 'state') return stateReply(structuredClone(data));
       if (m.type === 'key') data.hasKey = !!m.key;
       if (m.type === 'stop') data.state = { phase: 'idle', message: 'Stopped. Original audio restored.' };
       return { ok: true };
@@ -146,4 +146,42 @@ test('continuous to voice and back retains source choice, existing mode hints an
   assert.equal(e.mode.disabled, true);
   assert.equal(e.sourceLanguageHint.hidden, false);
   assert.equal(e.modeHint.textContent, continuousHint);
+});
+
+test('late state reply retains every user setting edit and still renders state and key', async () => {
+  for (const [name, value] of [['original', '5'], ['translated', '0'], ['mode', 'voice'], ['sourceLanguage', 'ja'], ['voice', 'ash']]) {
+    let release;
+    const p = await popup({ hasKey: true, phase: 'connecting', message: 'Connecting test', stateReply: data => new Promise(resolve => { release = () => resolve(data); }) });
+    const e = p.elements;
+    e[name].value = value;
+    await e[name].listeners[name === 'original' || name === 'translated' ? 'input' : 'change']();
+    release(); await tick();
+    assert.equal(e[name].value, value);
+    if (name === 'original' || name === 'translated') assert.equal(e[name + 'Value'].textContent, value + '%');
+    assert.equal(e.sourceLanguageHint.hidden, name === 'mode');
+    assert.equal(e.phase.textContent, 'Connecting');
+    assert.equal(e.status.textContent, 'Connecting test');
+    assert.equal(e.keyStatus.textContent, 'Saved key');
+    assert.equal(e.setup.open, false);
+    assert.equal(e.mode.disabled, true);
+    assert.equal(e.original.disabled, false);
+    assert.equal(e.translated.disabled, false);
+    // A later edit must also start from the preserved current settings.
+    e.translated.value = '45'; await e.translated.listeners.input();
+    const saved = p.calls.filter(m => m.type === 'settings').at(-1).settings;
+    assert.equal(saved[name], name === 'translated' ? 45 : settings({ [name]: value })[name]);
+  }
+});
+test('refresh after Stop preserves an overlapping slider edit and renders removed key', async () => {
+  let release, hold = false;
+  const p = await popup({ hasKey: true, stateReply: data => hold ? new Promise(resolve => { release = () => resolve(data); }) : data });
+  hold = true; p.data.hasKey = false;
+  const pending = p.elements.stop.onclick(); await tick();
+  p.elements.original.value = '5'; await p.elements.original.listeners.input();
+  release(); await pending;
+  assert.equal(p.elements.original.value, '5');
+  assert.equal(p.elements.originalValue.textContent, '5%');
+  assert.equal(p.elements.phase.textContent, 'API key needed');
+  assert.equal(p.elements.keyStatus.textContent, 'Key needed');
+  assert.equal(p.elements.setup.open, true);
 });

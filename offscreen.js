@@ -25,6 +25,7 @@ async function fail(s, message) {
   publish(s, { phase: 'error', message });
 }
 function mix(options) {
+  if (session) session.state.options = { ...session.state.options, original: options.original, translated: options.translated };
   if (session?.gain) session.gain.gain.setTargetAtTime(options.original / 100, session.context.currentTime, 0.02);
   output.volume = options.translated / 100;
 }
@@ -37,7 +38,7 @@ async function start(message) {
     s.context = new AudioContext({ latencyHint: 'interactive' });
     s.gain = s.context.createGain();
     s.context.createMediaStreamSource(s.stream).connect(s.gain).connect(s.context.destination);
-    mix(message.options);
+    mix(s.state.options);
     await s.context.resume();
     const pc = s.pc = new RTCPeerConnection();
     // Send the raw capture, BEFORE the local volume mixer. English playback is
