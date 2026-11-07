@@ -2,6 +2,7 @@ import { settings, languages } from './config.js';
 const $ = id => document.getElementById(id);
 let current = settings();
 let settingsVersion = 0;
+let initGeneration = 0;
 let busy = false;
 let hasKey = false;
 async function send(type, extra = {}) {
@@ -43,7 +44,9 @@ async function init() {
     return;
   }
   const version = settingsVersion;
+  const generation = ++initGeneration;
   const result = await send('state');
+  if (generation !== initGeneration) return;
   if (version === settingsVersion) {
     current = result.settings;
     for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) $(name).value = current[name];

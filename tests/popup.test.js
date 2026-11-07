@@ -185,3 +185,42 @@ test('refresh after Stop preserves an overlapping slider edit and renders remove
   assert.equal(p.elements.keyStatus.textContent, 'Key needed');
   assert.equal(p.elements.setup.open, true);
 });
+
+test('older initial live reply cannot overwrite the newer Stop refresh', async () => {
+  let release;
+  let requests = 0;
+  const p = await popup({ phase: 'live', stateReply: data => ++requests === 1
+    ? new Promise(resolve => { release = () => resolve(data); }) : data });
+  const e = p.elements;
+  p.update({ phase: 'live', message: 'Listening · Japanese → English', title: 'Test tab' });
+  assert.equal(e.stop.disabled, false);
+  p.data.settings = settings({ original: 5, translated: 45, mode: 'voice', sourceLanguage: 'ja', voice: 'ash' });
+  p.data.hasKey = true;
+  await e.stop.onclick();
+  assert.equal(requests, 2);
+  const assertLatest = () => {
+    assert.equal(p.data.state.phase, 'idle');
+    assert.equal(p.body.dataset.phase, 'idle');
+    assert.equal(e.phase.textContent, 'Ready');
+    assert.equal(e.status.textContent, 'Stopped. Original audio restored.');
+    assert.equal(e.start.disabled, false);
+    assert.equal(e.stop.disabled, true);
+    assert.equal(e.keyStatus.textContent, 'Saved key');
+    assert.equal(e.forgetKey.disabled, false);
+    assert.equal(e.setup.open, false);
+    for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) {
+      assert.equal(e[name].value, p.data.settings[name]);
+    }
+    assert.equal(e.originalValue.textContent, '5%');
+    assert.equal(e.translatedValue.textContent, '45%');
+    assert.equal(e.sourceLanguageHint.hidden, true);
+    assert.equal(e.voiceRow.hidden, false);
+    assert.equal(e.sourceName.textContent, 'Japanese');
+  };
+  assertLatest();
+  release(); await tick();
+  assertLatest();
+  e.translated.value = '55'; await e.translated.listeners.input();
+  const saved = p.calls.filter(m => m.type === 'settings').at(-1).settings;
+  assert.deepEqual(saved, settings({ ...p.data.settings, translated: 55 }));
+});
