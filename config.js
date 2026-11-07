@@ -35,7 +35,7 @@ export function sessionRequest(options) {
 }
 export function apiError(status) {
   if (status === 401) return 'API key rejected. Check your OpenAI API key.';
-  if (status === 403 || status === 404) return 'Your API project may not have access to this model. Try the other translation mode.';
+  if (status === 403 || status === 404) return 'Your API project may not have access to this model. Try the other translation style.';
   if (status === 429) return 'API quota or rate limit reached. Check your API billing and limits.';
   return `Audio service returned HTTP ${status}. Stop and try again.`;
 }

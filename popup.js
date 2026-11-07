@@ -17,9 +17,11 @@ function renderMode() {
 }
 function render(state) {
   const running = ['live', 'connecting'].includes(state.phase);
-  document.body.dataset.phase = state.phase;
-  $('phase').textContent = { idle: 'Ready', live: 'Live translation', connecting: 'Connecting', error: 'Needs attention' }[state.phase] || 'Ready';
-  $('status').textContent = state.message;
+  const interrupted = state.phase === 'live' && state.message === 'Connection interrupted…';
+  const needsKey = state.phase === 'idle' && !hasKey;
+  document.body.dataset.phase = interrupted ? 'interrupted' : state.phase;
+  $('phase').textContent = interrupted ? 'Interrupted' : needsKey ? 'API key needed' : { idle: 'Ready', live: 'Live translation', connecting: 'Connecting', error: 'Needs attention' }[state.phase] || 'Ready';
+  $('status').textContent = needsKey ? 'Add your OpenAI API key under API connection to start translating.' : state.message;
   $('source').textContent = running ? state.title || 'Selected tab' : '';
   $('start').disabled = running || busy || !hasKey;
   $('stop').disabled = !running && !busy;
@@ -28,7 +30,8 @@ function render(state) {
   $('sourceLanguage').disabled = running || busy;
   $('transcript').textContent = state.transcript || 'Translated words will appear here.';
   $('transcript').scrollTop = $('transcript').scrollHeight;
-  $('keyStatus').textContent = hasKey ? 'Connected key' : 'Key needed';
+  $('keyStatus').textContent = hasKey ? 'Saved key' : 'Key needed';
+  $('forgetKey').disabled = !hasKey;
 }
 async function init() {
   if (!globalThis.chrome?.runtime?.id) {
@@ -53,14 +56,18 @@ for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']
     try { await send('settings', { settings: current }); } catch (e) { error(e); }
   });
 }
+$('key').addEventListener('input', () => { $('keyError').textContent = ''; });
 $('saveKey').onclick = async () => {
   try {
     const key = $('key').value.trim();
     if (!key) throw new Error('Paste your API key into this field.');
     await send('key', { key });
-    $('key').value = ''; $('error').textContent = '';
-    await init(); $('setup').open = false;
-  } catch (e) { error(e); }
+  } catch (e) {
+    $('keyError').textContent = e.message || String(e);
+    return;
+  }
+  $('key').value = ''; $('keyError').textContent = '';
+  try { await init(); $('setup').open = false; } catch (e) { error(e); }
 };
 $('forgetKey').onclick = async () => { try { await send('stop'); await send('key', { key: '' }); await init(); } catch (e) { error(e); } };
 $('start').onclick = async () => {

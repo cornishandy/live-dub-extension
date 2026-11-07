@@ -47,7 +47,7 @@ See [PRIVACY.md](PRIVACY.md) for data handling and an explanation of every Chrom
 | Symptom | What to do |
 | --- | --- |
 | Key rejected | Enter a valid OpenAI API key for your project. |
-| Model unavailable | Check project access, or explicitly try the other translation mode. |
+| Model unavailable | Check project access, or explicitly try the other translation style. |
 | Quota / rate limit | Check API billing, credit balance, and project limits. |
 | No English audio | Unmute the video player, raise English volume, check that speech is playing, then restart. |
 | Long translation delay | Try Continuous, reduce competing sounds, and stop/restart after seeking. |
