@@ -12,6 +12,7 @@ function error(e) { $('error').textContent = e.message || String(e); }
 function renderMode() {
   $('sourceNative').textContent = languages[current.sourceLanguage].native;
   $('sourceName').textContent = languages[current.sourceLanguage].name;
+  $('sourceLanguageHint').hidden = current.mode !== 'continuous';
   $('voiceRow').hidden = current.mode !== 'voice';
   $('modeHint').textContent = current.mode === 'voice' ? 'Natural AI voices. Waits for short pauses; may lag during continuous dialogue. Stop to change voices.' : 'Streams translations as speech arrives. Voice follows each speaker’s tone and pitch.';
 }

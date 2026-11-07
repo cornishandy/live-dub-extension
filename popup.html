@@ -10,7 +10,7 @@
       <label for="translated">English translation <output id="translatedValue">100%</output></label><input id="translated" type="range" min="0" max="100" value="100">
       <p class="hint">Keep the video player unmuted. Mix its sound here.</p>
     </section>
-    <section class="card"><label for="sourceLanguage">Source language</label><select id="sourceLanguage"><option value="ko">Korean · 한국어</option><option value="ja">Japanese · 日本語</option><option value="auto">Auto-detect · any language</option></select><label class="modeLabel" for="mode">Translation style</label><select id="mode"><option value="continuous">Continuous · prioritize speed</option><option value="voice">Choose a voice · phrase by phrase</option></select>
+    <section class="card"><label for="sourceLanguage">Source language</label><select id="sourceLanguage"><option value="ko">Korean · 한국어</option><option value="ja">Japanese · 日本語</option><option value="auto">Auto-detect · any language</option></select><p class="hint" id="sourceLanguageHint">Continuous detects the language automatically. This selection applies to Choose a voice.</p><label class="modeLabel" for="mode">Translation style</label><select id="mode"><option value="continuous">Continuous · prioritize speed</option><option value="voice">Choose a voice · phrase by phrase</option></select>
       <div id="voiceRow" hidden><label for="voice">English voice</label><select id="voice"><option value="marin">Marin · female</option><option value="cedar">Cedar · male</option><option value="coral">Coral · female</option><option value="ash">Ash · male</option></select></div>
       <p class="hint" id="modeHint">Streams translations as speech arrives. Voice follows each speaker’s tone and pitch.</p>
     </section>

@@ -110,3 +110,40 @@ test('key alert follows input; storage helper and transcript match accepted word
 test('model access recovery names the visible translation style control', () => {
   for (const status of [403, 404]) assert.equal(apiError(status), 'Your API project may not have access to this model. Try the other translation style.');
 });
+
+test('source language explanation sits between the source selector and translation style', () => {
+  assert.match(html, /<select id="sourceLanguage">[\s\S]*?<\/select><p class="hint" id="sourceLanguageHint">Continuous detects the language automatically\. This selection applies to Choose a voice\.<\/p><label class="modeLabel"/);
+});
+test('continuous to voice and back retains source choice, existing mode hints and listening status', async () => {
+  const p = await popup({ hasKey: true }), e = p.elements;
+  const continuousHint = 'Streams translations as speech arrives. Voice follows each speaker’s tone and pitch.';
+  const voiceHint = 'Natural AI voices. Waits for short pauses; may lag during continuous dialogue. Stop to change voices.';
+  assert.equal(e.sourceLanguageHint.hidden, false);
+  assert.equal(e.modeHint.textContent, continuousHint);
+  e.sourceLanguage.value = 'ja';
+  await e.sourceLanguage.listeners.change();
+  for (const mode of ['voice', 'continuous']) {
+    e.mode.value = mode;
+    await e.mode.listeners.change();
+    assert.equal(e.sourceLanguageHint.hidden, mode !== 'continuous');
+    assert.equal(e.voiceRow.hidden, mode !== 'voice');
+    assert.equal(e.modeHint.textContent, mode === 'voice' ? voiceHint : continuousHint);
+    assert.equal(e.sourceLanguage.value, 'ja');
+    assert.equal(e.sourceName.textContent, 'Japanese');
+    assert.equal(e.sourceNative.textContent, '日本語');
+    assert.equal(e.sourceLanguage.disabled, false);
+    assert.equal(e.phase.textContent, 'Ready');
+    assert.equal(e.status.textContent, 'Ready when you are.');
+    assert.equal(e.error.textContent || '', '');
+    const saved = p.calls.filter(m => m.type === 'settings').at(-1).settings;
+    assert.equal(saved.sourceLanguage, 'ja');
+    assert.equal(saved.mode, mode);
+  }
+  p.update({ phase: 'live', message: 'Listening · Japanese → English', title: 'Test tab' });
+  assert.equal(e.phase.textContent, 'Live translation');
+  assert.equal(e.status.textContent, 'Listening · Japanese → English');
+  assert.equal(e.sourceLanguage.disabled, true);
+  assert.equal(e.mode.disabled, true);
+  assert.equal(e.sourceLanguageHint.hidden, false);
+  assert.equal(e.modeHint.textContent, continuousHint);
+});
