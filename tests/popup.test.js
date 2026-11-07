@@ -224,3 +224,54 @@ test('older initial live reply cannot overwrite the newer Stop refresh', async (
   const saved = p.calls.filter(m => m.type === 'settings').at(-1).settings;
   assert.deepEqual(saved, settings({ ...p.data.settings, translated: 55 }));
 });
+
+test('storage push wins over a pending session snapshot while RPC initializes other fields', async () => {
+  let release;
+  let requests = 0;
+  const initialSettings = settings({ original: 5, translated: 45, mode: 'voice', sourceLanguage: 'ja', voice: 'ash' });
+  const p = await popup({ hasKey: true, phase: 'live', stateReply: data => ++requests === 1
+    ? new Promise(resolve => { release = () => resolve({ ...data, settings: initialSettings }); }) : data });
+  const e = p.elements;
+  p.update({ phase: 'error', message: 'Audio session failed', title: 'Test tab', transcript: 'Latest words' });
+  assert.equal(e.phase.textContent, 'Needs attention');
+  assert.equal(e.start.disabled, true); // Key initialization is still pending.
+  release(); await tick();
+  assert.equal(p.data.state.phase, 'error');
+  assert.equal(p.body.dataset.phase, 'error');
+  assert.equal(e.phase.textContent, 'Needs attention');
+  assert.equal(e.status.textContent, 'Audio session failed');
+  assert.equal(e.transcript.textContent, 'Latest words');
+  assert.equal(e.start.disabled, false);
+  assert.equal(e.stop.disabled, true);
+  assert.equal(e.keyStatus.textContent, 'Saved key');
+  assert.equal(e.forgetKey.disabled, false);
+  assert.equal(e.setup.open, false);
+  for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) {
+    assert.equal(e[name].value, initialSettings[name]);
+  }
+  for (const name of ['mode', 'voice', 'sourceLanguage']) assert.equal(e[name].disabled, false);
+  assert.equal(e.originalValue.textContent, '5%');
+  assert.equal(e.translatedValue.textContent, '45%');
+  assert.equal(e.sourceLanguageHint.hidden, true);
+  assert.equal(e.voiceRow.hidden, false);
+  assert.equal(e.sourceName.textContent, 'Japanese');
+  assert.equal(e.sourceNative.textContent, '日本語');
+  assert.equal(e.modeHint.textContent, 'Natural AI voices. Waits for short pauses; may lag during continuous dialogue. Stop to change voices.');
+  e.translated.value = '55'; await e.translated.listeners.input();
+  assert.deepEqual(p.calls.filter(m => m.type === 'settings').at(-1).settings, settings({ ...initialSettings, translated: 55 }));
+
+  // A push preceding a fresh request must not pin the popup to that state forever.
+  await e.stop.onclick();
+  assert.equal(e.phase.textContent, 'Ready');
+  assert.equal(e.status.textContent, 'Stopped. Original audio restored.');
+  assert.equal(e.start.disabled, false);
+  // With no push since this request, the latest RPC session snapshot wins again.
+  p.data.state = { phase: 'live', message: 'Listening · Japanese → English', title: 'New tab' };
+  e.key.value = 'test-key'; await e.saveKey.onclick();
+  assert.equal(requests, 3);
+  assert.equal(e.phase.textContent, 'Live translation');
+  assert.equal(e.status.textContent, 'Listening · Japanese → English');
+  assert.equal(e.source.textContent, 'New tab');
+  assert.equal(e.start.disabled, true);
+  assert.equal(e.stop.disabled, false);
+});

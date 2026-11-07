@@ -3,6 +3,8 @@ const $ = id => document.getElementById(id);
 let current = settings();
 let settingsVersion = 0;
 let initGeneration = 0;
+let stateVersion = 0;
+let latestState;
 let busy = false;
 let hasKey = false;
 async function send(type, extra = {}) {
@@ -45,8 +47,10 @@ async function init() {
   }
   const version = settingsVersion;
   const generation = ++initGeneration;
+  const sessionVersion = stateVersion;
   const result = await send('state');
   if (generation !== initGeneration) return;
+  if (sessionVersion === stateVersion) latestState = result.state;
   if (version === settingsVersion) {
     current = result.settings;
     for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) $(name).value = current[name];
@@ -54,7 +58,7 @@ async function init() {
   }
   hasKey = result.hasKey;
   $('setup').open = !hasKey;
-  renderMode(); render(result.state);
+  renderMode(); render(latestState);
 }
 for (const name of ['original', 'translated', 'mode', 'voice', 'sourceLanguage']) {
   $(name).addEventListener(name === 'original' || name === 'translated' ? 'input' : 'change', async () => {
@@ -89,5 +93,11 @@ $('start').onclick = async () => {
   finally { busy = false; await init().catch(error); }
 };
 $('stop').onclick = async () => { try { await send('stop'); busy = false; await init(); } catch (e) { error(e); } };
-if (globalThis.chrome?.storage) chrome.storage.onChanged.addListener((changes, area) => { if (area === 'session' && changes.state) render(changes.state.newValue); });
+if (globalThis.chrome?.storage) chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'session' && changes.state) {
+    stateVersion++;
+    latestState = changes.state.newValue;
+    render(latestState);
+  }
+});
 init().catch(error);
